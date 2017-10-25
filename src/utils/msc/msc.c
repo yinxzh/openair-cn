@@ -70,6 +70,8 @@
 #include "dynamic_memory_check.h"
 #include "log.h"
 
+#define FPRINTF_ERROR(...)    do {syslog (LOG_ERR,     ##__VA_ARGS__);} while(0)
+
 //-------------------------------
 #define MSC_MAX_QUEUE_ELEMENTS    1024
 #define MSC_MAX_PROTO_NAME_LENGTH 16
@@ -141,7 +143,7 @@ void *msc_task (void *args_p)
     }
   }
 
-  fprintf (stderr, "Task MSC exiting\n");
+  FPRINTF_ERROR ("Task MSC exiting\n");
   return NULL;
 }
 
@@ -175,11 +177,11 @@ msc_init (
   g_msc_start_time_second = start_time.tv_sec;
 #endif
 
-  fprintf (stderr, "Initializing MSC logs\n");
+  FPRINTF_ERROR ("Initializing MSC logs\n");
   rv = snprintf (msc_filename, 256, "/tmp/openair.msc.%u.log", envP);   // TODO NAME
 
   if ((0 >= rv) || (256 < rv)) {
-    fprintf (stderr, "Error in MSC log file name");
+    FPRINTF_ERROR ("Error in MSC log file name");
   }
 
   g_msc_fd = fopen (msc_filename, "w");
@@ -392,7 +394,7 @@ msc_init (
 
   rv = itti_create_task (TASK_MSC, msc_task, NULL);
   AssertFatal (rv == 0, "Create task for MSC failed!\n");
-  fprintf (stderr, "Initializing MSC logs Done\n");
+  FPRINTF_ERROR ("Initializing MSC logs Done\n");
   return 0;
 }
 
@@ -434,13 +436,13 @@ void msc_end (void)
     rv = fflush (g_msc_fd);
 
     if (rv != 0) {
-      fprintf (stderr, "Error while flushing stream of MSC log file: %s", strerror (errno));
+      FPRINTF_ERROR ("Error while flushing stream of MSC log file: %s", strerror (errno));
     }
 
     rv = fclose (g_msc_fd);
 
     if (rv != 0) {
-      fprintf (stderr, "Error while closing MSC log file: %s", strerror (errno));
+      FPRINTF_ERROR ("Error while closing MSC log file: %s", strerror (errno));
     }
   }
 }
@@ -468,7 +470,7 @@ void msc_log_declare_proto (const msc_proto_t protoP)
         rv = snprintf (char_message_p, MSC_MAX_MESSAGE_LENGTH, "%" PRIu64 " [PROTO] %d %s\n", __sync_fetch_and_add (&g_message_number, 1), protoP, &g_msc_proto2str[protoP][0]);
 
         if (0 > rv) {
-          fprintf (stderr, "Error while declaring new protocol in MSC: %s", strerror (errno));
+          FPRINTF_ERROR ("Error while declaring new protocol in MSC: %s", strerror (errno));
         }
 
         new_item_p->message_str = char_message_p;
@@ -481,7 +483,7 @@ void msc_log_declare_proto (const msc_proto_t protoP)
           rv = lfds611_queue_guaranteed_enqueue (g_msc_message_queue_p, new_item_p);
 
           if (0 == rv) {
-            fprintf (stderr, "Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
+            FPRINTF_ERROR ("Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
             rv = lfds611_stack_guaranteed_push (g_msc_memory_stack_p, char_message_p);
             free_wrapper ((void**) &new_item_p);
           }
@@ -489,12 +491,12 @@ void msc_log_declare_proto (const msc_proto_t protoP)
 
         return;
       } else {
-        fprintf (stderr, "Error while lfds611_stack_pop()\n");
+        FPRINTF_ERROR ("Error while lfds611_stack_pop()\n");
       }
 
       free_wrapper ((void**) &new_item_p);
     } else {
-      fprintf (stderr, "Error while malloc in MSC");
+      FPRINTF_ERROR ("Error while malloc in MSC");
     }
   }
 }
@@ -529,7 +531,7 @@ void msc_log_event (const msc_proto_t protoP, char *format, ...)
           __sync_fetch_and_add (&g_message_number, 1), protoP, elapsed_time.tv_sec, elapsed_time.tv_usec);
 
       if ((0 > rv) || (MSC_MAX_MESSAGE_LENGTH < rv)) {
-        fprintf (stderr, "Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
+        FPRINTF_ERROR ("Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
         goto error_event;
       }
 
@@ -538,7 +540,7 @@ void msc_log_event (const msc_proto_t protoP, char *format, ...)
       va_end (args);
 
       if ((0 > rv2) || ((MSC_MAX_MESSAGE_LENGTH - rv) < rv2)) {
-        fprintf (stderr, "Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
+        FPRINTF_ERROR ("Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
         goto error_event;
       }
 
@@ -546,7 +548,7 @@ void msc_log_event (const msc_proto_t protoP, char *format, ...)
       rv2 = snprintf (&char_message_p[rv], MSC_MAX_MESSAGE_LENGTH - rv, "\n");
 
       if ((0 > rv2) || ((MSC_MAX_MESSAGE_LENGTH - rv) < rv2)) {
-        fprintf (stderr, "Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
+        FPRINTF_ERROR ("Error while logging MSC event : %s", &g_msc_proto2str[protoP][0]);
         goto error_event;
       }
 
@@ -558,13 +560,13 @@ void msc_log_event (const msc_proto_t protoP, char *format, ...)
       rv = lfds611_queue_enqueue (g_msc_message_queue_p, new_item_p);
 
       if (0 == rv) {
-        fprintf (stderr, "Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
+        FPRINTF_ERROR ("Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
         rv = lfds611_stack_guaranteed_push (g_msc_memory_stack_p, char_message_p);
         free_wrapper ((void**) &new_item_p);
       }
     } else {
       free_wrapper ((void**) &new_item_p);
-      fprintf (stderr, "Error while lfds611_stack_pop()\n");
+      FPRINTF_ERROR ("Error while lfds611_stack_pop()\n");
     }
   }
 
@@ -642,13 +644,13 @@ msc_log_message (
       rv = lfds611_queue_enqueue (g_msc_message_queue_p, new_item_p);
 
       if (0 == rv) {
-        fprintf (stderr, "Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
+        FPRINTF_ERROR ("Error while lfds611_queue_guaranteed_enqueue message %s in MSC", char_message_p);
         rv = lfds611_stack_guaranteed_push (g_msc_memory_stack_p, char_message_p);
         free_wrapper ((void**) &new_item_p);
       }
     } else {
       free_wrapper ((void**) &new_item_p);
-      fprintf (stderr, "Error while lfds611_stack_pop()\n");
+      FPRINTF_ERROR ("Error while lfds611_stack_pop()\n");
       msc_flush_messages ();
     }
   }
