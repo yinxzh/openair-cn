@@ -430,7 +430,7 @@ install_1.1.5_freediameter_from_source() {
     cd /tmp
     echo "Downloading 1.1.5 freeDiameter archive"
     $SUDO rm -rf /tmp/1.1.5.tar.gz /tmp/freeDiameter-1.1.5 /tmp/freediameter
-    GIT_SSL_NO_VERIFY=true git clone https://gitlab.eurecom.fr/oai/freediameter.git -b eurecom-1.1.5
+    GIT_SSL_NO_VERIFY=true git clone https://github.com/yinxzh/freediameter.git -b eurecom-1.1.5
     cd /tmp/freediameter
     #patch -p1 < $OPENAIRCN_DIR/src/s6a/freediameter/freediameter-1.1.5.patch
     mkdir build
@@ -509,7 +509,7 @@ install_freediameter_from_source() {
     cd /tmp
     echo "Downloading 1.2.0 freeDiameter archive"
     $SUDO rm -rf /tmp/1.2.0.tar.gz* /tmp/freeDiameter-1.2.0 /tmp/freediameter
-    GIT_SSL_NO_VERIFY=true git clone https://gitlab.eurecom.fr/oai/freediameter.git -b eurecom-1.2.0
+    GIT_SSL_NO_VERIFY=true git clone https://github.com/yinxzh/freediameter.git -b eurecom-1.2.0
     #wget http://www.freediameter.net/hg/freeDiameter/archive/1.2.0.tar.gz
     #tar xzf 1.2.0.tar.gz
     cd freediameter
